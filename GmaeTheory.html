@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategem: The Game Theory Learning Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Zilla+Slab:wght@600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d2c4e;
+            --secondary-color: #1a5a9c;
+            --accent-color: #fca311;
+            --success-color: #2a9d8f;
+            --danger-color: #e76f51;
+            --bg-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --text-color: #343a40;
+            --light-gray: #e9ecef;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* General Styles */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        #app { display: flex; }
+        .card {
+            background-color: var(--surface-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        h3 { color: var(--secondary-color); font-size: 1.8em; margin-top: 0; }
+        h4 { color: var(--primary-color); font-size: 1.4em; }
+
+        /* Sidebar Navigation */
+        #sidebar {
+            width: 240px; background-color: var(--primary-color); color: var(--surface-color);
+            padding: 20px 0; height: 100vh; position: fixed; display: flex; flex-direction: column;
+        }
+        #sidebar h1 {
+            font-family: 'Zilla Slab', serif; text-align: center; font-size: 2.2em;
+            margin: 0 0 10px 0; padding: 0 20px;
+        }
+        #sidebar p.subtitle { text-align: center; font-size: 0.9em; color: var(--light-gray); margin: 0 0 30px 0; padding: 0 20px; }
+        nav { flex-grow: 1; }
+        nav button {
+            display: block; width: 100%; background: none; border: none; text-align: left; padding: 15px 25px;
+            cursor: pointer; font-size: 17px; color: var(--light-gray); transition: all 0.3s; border-left: 4px solid transparent;
+        }
+        nav button:hover { background-color: var(--secondary-color); }
+        nav button.active {
+            background-color: #00000020; color: var(--surface-color); font-weight: bold; border-left: 4px solid var(--accent-color);
+        }
+        #sidebar footer { font-size: 0.8em; text-align: center; color: var(--light-gray); padding: 20px; }
+
+        /* Main Content Area */
+        #main-content {
+            margin-left: 240px; width: calc(100% - 240px); padding: 40px; overflow-y: auto;
+        }
+        .content-section { display: none; max-width: 900px; margin: 0 auto; }
+        .content-section.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        header.page-header { border-bottom: 2px solid var(--light-gray); margin-bottom: 30px; padding-bottom: 20px; }
+        header.page-header h2 { font-size: 2.5em; color: var(--primary-color); margin: 0; }
+
+        /* Component Styles */
+        .action-btn {
+            background-color: var(--accent-color); color: var(--primary-color); font-weight: bold; border: none;
+            padding: 12px 20px; font-size: 16px; border-radius: 50px; cursor: pointer; transition: all 0.2s;
+        }
+        .action-btn:hover { background-color: #ffb74d; transform: translateY(-2px); }
+        .action-btn:disabled { background-color: var(--light-gray); color: #999; cursor: not-allowed; transform: none; }
+        select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-left: 10px; font-size: 1em; }
+
+        /* Dashboard */
+        #dashboard-stats { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; }
+        .stat-card { flex: 1; text-align: center; padding: 20px; min-width: 200px; }
+        .stat-card .value { font-size: 2.5em; font-weight: bold; color: var(--accent-color); }
+        .stat-card .label { font-size: 1.1em; color: var(--secondary-color); }
+        #achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .achievement { background: var(--bg-color); border: 1px solid var(--light-gray); padding: 15px; border-radius: var(--border-radius); transition: all 0.3s; }
+        .achievement.unlocked { border-left: 5px solid var(--success-color); background: #f0fff0; }
+        .achievement.unlocked h5 { color: var(--success-color); }
+        .achievement h5 { margin: 0 0 5px 0; }
+        .achievement p { margin: 0; font-size: 0.9em; }
+
+        /* Scenarios & Sandbox */
+        .payoff-matrix { border-collapse: collapse; margin: 20px 0; font-size: 1.1em; width: 100%; max-width: 500px; table-layout: fixed; }
+        .payoff-matrix th, .payoff-matrix td { border: 1px solid #ccc; padding: 12px 15px; text-align: center; position: relative; }
+        .payoff-matrix th { background-color: var(--primary-color); color: white; }
+        .payoff-matrix .player-label { background-color: var(--secondary-color); }
+        .payoff { font-weight: bold; }
+        .payoff-p1 { color: var(--danger-color); }
+        .payoff-p2 { color: var(--secondary-color); }
+        .analysis-result { margin-top: 15px; padding: 15px; background-color: #eef7ff; border-left: 5px solid var(--secondary-color); border-radius: 4px; }
+        .play-area { margin-top: 20px; padding: 20px; background: var(--bg-color); border-radius: var(--border-radius); }
+        .play-log { margin-top: 15px; max-height: 150px; overflow-y: auto; background: #eee; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+        td.p1-best-response::before { content: '✓'; color: var(--danger-color); font-weight: bold; position: absolute; left: 5px; top: 2px; font-size: 1.2em; }
+        td.p2-best-response::after { content: '✓'; color: var(--secondary-color); font-weight: bold; position: absolute; right: 5px; top: 2px; font-size: 1.2em; }
+        td.nash-equilibrium { background-color: #d4edda !important; }
+
+        /* Glossary */
+        glossary-term {
+            border-bottom: 2px dotted var(--accent-color);
+            cursor: help;
+            position: relative;
+        }
+        .tooltip {
+            visibility: hidden; width: 250px; background-color: var(--primary-color); color: #fff;
+            text-align: left; border-radius: 6px; padding: 10px; position: absolute; z-index: 10;
+            bottom: 125%; left: 50%; margin-left: -125px; opacity: 0; transition: opacity 0.3s;
+        }
+        glossary-term:hover .tooltip { visibility: visible; opacity: 1; }
+        #glossary-search { width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
+
+        /* Quiz */
+        #quiz-difficulty-selector button { margin-right: 10px; }
+        .quiz-question { margin-bottom: 20px; }
+        .feedback { margin-top: 10px; padding: 10px; border-radius: 4px; display: none; }
+        .feedback.correct { display:block; color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .feedback.incorrect { display:block; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <aside id="sidebar">
+            <h1>Strategem</h1>
+            <p class="subtitle">Game Theory Learning Hub</p>
+            <nav id="main-nav">
+                <button class="nav-btn" data-page="dashboard">Dashboard</button>
+                <button class="nav-btn" data-page="learn">Learning Hub</button>
+                <button class="nav-btn" data-page="scenarios">Interactive Scenarios</button>
+                <button class="nav-btn" data-page="cases">Case Studies</button>
+                <button class="nav-btn" data-page="glossary">Glossary</button>
+                <button class="nav-btn" data-page="sandbox">Sandbox Creator</button>
+                <button class="nav-btn" data-page="quiz">Test Your Knowledge</button>
+            </nav>
+            <footer>
+                <p>© 2025 Accelerate Solutions, LLC.</p>
+            </footer>
+        </aside>
+
+        <main id="main-content">
+            <section id="dashboard" class="content-section"></section>
+            <section id="learn" class="content-section"></section>
+            <section id="scenarios" class="content-section"></section>
+            <section id="cases" class="content-section"></section>
+            <section id="glossary" class="content-section"></section>
+            <section id="sandbox" class="content-section"></section>
+            <section id="quiz" class="content-section"></section>
+        </main>
+    </div>
+
+    <script>
+    (() => {
+        // --- DATA STORE (Remains unchanged) ---
+        const Data = {
+            learningContent: {
+                'introduction': {
+                    title: 'Welcome to Game Theory',
+                    content: `<p><glossary-term>Game Theory</glossary-term> is the study of mathematical models of strategic interaction among rational decision-makers. It has applications in all fields of social science, as well as in logic, systems science and computer science. This hub will guide you from the foundational concepts to complex, real-world applications.</p>`
+                },
+                'history': {
+                    title: 'A Brief History',
+                    content: `
+                        <h4>The Founders</h4>
+                        <p>While concepts existed for centuries, modern Game Theory was pioneered by <strong>John von Neumann</strong> and <strong>Oskar Morgenstern</strong> in their 1944 book <em>"Theory of Games and Economic Behavior"</em>. They focused on <glossary-term>Zero-Sum Game</glossary-term>s, where one player's gain is another's loss.</p>
+                        <h4>The Nash Revolution</h4>
+                        <p>The field was revolutionized in the 1950s by <strong>John Nash</strong>, who developed the concept of a "<glossary-term>Nash Equilibrium</glossary-term>". This provided a way to analyze non-zero-sum games, where players could both win or both lose, dramatically expanding the theory's applicability.</p>
+                        <h4>Modern Developments</h4>
+                        <p>Since Nash, the field has exploded with concepts like evolutionary game theory (John Maynard Smith), <glossary-term>Mechanism Design</glossary-term> (Hurwicz, Maskin, Myerson), and behavioral game theory, which incorporates psychological factors.</p>
+                    `
+                },
+                'key-concepts': {
+                    title: 'Key Concepts',
+                    content: `
+                        <ul>
+                            <li><strong>Game:</strong> Any interaction between multiple people (players) in which each player's payoff is affected by the decisions made by others.</li>
+                            <li><strong>Players:</strong> The rational decision-makers in a game.</li>
+                            <li><strong>Strategy:</strong> A complete plan of action a player will take. A <em>pure strategy</em> is a single course of action. A <em>mixed strategy</em> involves randomly choosing among pure strategies with certain probabilities.</li>
+                            <li><strong>Payoff:</strong> The outcome or reward a player receives. It can be money, utility, or any other quantifiable measure.</li>
+                            <li><strong><glossary-term>Dominant Strategy</glossary-term>:</strong> A strategy that yields the highest payoff for a player regardless of what the other players do.</li>
+                            <li><strong><glossary-term>Nash Equilibrium</glossary-term>:</strong> A set of strategies, one for each player, where no player has an incentive to unilaterally change their strategy. This is the cornerstone of modern game theory.</li>
+                            <li><strong><glossary-term>Pareto Optimality</glossary-term>:</strong> An outcome where it's impossible to make any one player better off without making at least one player worse off. The Nash Equilibrium is not always Pareto Optimal (as seen in the Prisoner's Dilemma).</li>
+                        </ul>
+                    `
+                },
+                'biographies': {
+                    title: 'Pioneers of Game Theory',
+                    content: `
+                        <h4>John von Neumann (1903-1957)</h4>
+                        <p>A Hungarian-American mathematician and polymath, von Neumann is considered the father of modern game theory. His 1928 paper and subsequent 1944 book with Oskar Morgenstern, <em>"Theory of Games and Economic Behavior"</em>, established the field. He proved the minimax theorem for two-player <glossary-term>Zero-Sum Game</glossary-term>s.</p>
+                        <h4>John F. Nash Jr. (1928-2015)</h4>
+                        <p>An American mathematician who made fundamental contributions to game theory, differential geometry, and partial differential equations. His most famous work, for which he won the Nobel Prize in Economics, was defining and proving the existence of the <glossary-term>Nash Equilibrium</glossary-term> in his 1950 doctoral thesis. This concept became a fundamental pillar for analyzing non-cooperative games.</p>
+                        <h4>John Maynard Smith (1920-2004)</h4>
+                        <p>A British evolutionary biologist and geneticist, he applied game theory to biology. He introduced the concept of the <glossary-term>Evolutionary Stable Strategy (ESS)</glossary-term>, a strategy which, if adopted by a population, cannot be invaded by any alternative mutant strategy. This revolutionized the study of animal behavior.</p>
+                    `
+                },
+            },
+            scenarios: [
+                {
+                    title: "The Prisoner's Dilemma",
+                    description: "Two gang members are arrested. If one betrays the other and the other stays silent, the betrayer goes free and the silent one gets 10 years. If both stay silent, they each get 1 year. If both betray, they each get 8 years.",
+                    players: { p1: 'Prisoner A', p2: 'Prisoner B' },
+                    actions: { a1: 'Stay Silent', a2: 'Betray' },
+                    payoffs: [ [[-1, -1], [-10, 0]], [[0, -10], [-8, -8]] ],
+                    aiOptions: {
+                        'Always Betray': 1,
+                        'Always Stay Silent': 0,
+                        'Tit-for-Tat': 'tit-for-tat',
+                        'Random': 'random'
+                    }
+                },
+                {
+                    title: "Game of Chicken",
+                    description: "Two drivers drive towards each other. If one swerves, they are a 'chicken' but safe. If both swerve, it's a draw. If neither swerves, they crash, which is the worst outcome. The best outcome is to go straight while the other swerves.",
+                    players: { p1: 'Driver 1', p2: 'Driver 2' },
+                    actions: { a1: 'Swerve', a2: 'Go Straight' },
+                    payoffs: [ [[0, 0], [-1, 10]], [[10, -1], [-100, -100]] ],
+                },
+                {
+                    title: "Stag Hunt",
+                    description: "Two hunters can either hunt a stag together or hunt a hare alone. Hunting a stag is more valuable but requires cooperation. If one hunts stag and the other hunts hare, the stag hunter gets nothing.",
+                    players: {p1: 'Hunter 1', p2: 'Hunter 2'},
+                    actions: {a1: 'Hunt Stag', a2: 'Hunt Hare'},
+                    payoffs: [ [[5, 5], [0, 3]], [[3, 0], [3, 3]] ],
+                },
+                {
+                    title: "Battle of the Sexes",
+                    description: "A couple wants to go out. One wants to go to the Opera, the other to a Football game. They'd rather go to their non-preferred event together than go to their preferred event alone. This is a coordination game.",
+                    players: { p1: 'Partner 1', p2: 'Partner 2' },
+                    actions: { a1: 'Opera', a2: 'Football' },
+                    payoffs: [ [[3, 2], [0, 0]], [[0, 0], [2, 3]] ],
+                },
+            ],
+            caseStudies: [
+                {
+                    title: 'Business: The Cola Wars (Coke vs. Pepsi)', field: 'Business',
+                    content: `<p>The rivalry between Coca-Cola and Pepsi is a classic example of a duopoly. Their decisions on pricing and advertising can be modeled as a game. If both advertise heavily, they largely cancel each other out, eating into profits. If both agree to moderate advertising, they both benefit. However, if one advertises heavily while the other doesn't, the advertiser gains significant market share.</p><p>This creates a Prisoner's Dilemma-like situation. The "<glossary-term>Dominant Strategy</glossary-term>" for both is often to advertise heavily, leading to a <glossary-term>Nash Equilibrium</glossary-term> where both spend billions, even though they would be collectively better off spending less. This demonstrates why collusion is tempting but unstable in competitive markets.</p>`
+                },
+                {
+                    title: 'Foreign Policy: The Cuban Missile Crisis', field: 'Foreign Policy',
+                    content: `<p>The 1962 Cuban Missile Crisis was a high-stakes Game of Chicken between the USA and the USSR. The players were Kennedy and Khrushchev. The actions were roughly 'Back Down' (remove missiles/blockade) vs. 'Escalate'.</p><p>The payoffs were global. Mutual escalation meant nuclear war (catastrophic loss for both). Mutual backing down was a neutral outcome. One side backing down while the other escalated was a huge political loss for one and a win for the other. The world watched as both players signaled their resolve while looking for a way to de-escalate without losing face, eventually finding a coordinated "swerve" to avoid the worst outcome.</p>`
+                },
+                {
+                    title: 'Biology: Vampire Bat Food Sharing', field: 'Biology',
+                    content: `<p>Vampire bats demonstrate reciprocal altruism, a concept from evolutionary game theory. A bat that fails to feed on a given night will starve. However, bats that have fed will often regurgitate blood to feed their unsuccessful roost-mates.</p><p>This can be modeled as a repeated Prisoner's Dilemma. A bat can 'Cooperate' (share) or 'Defect' (not share). The cost of sharing is small, but the benefit to the recipient is life-saving. Since bats interact repeatedly with the same individuals, a "Tit-for-Tat" strategy emerges: they share with those who have shared with them in the past. This stable cooperative strategy ensures the survival of the group.</p>`
+                },
+                {
+                    title: 'Business: Auction Theory (Google Ads)', field: 'Business',
+                    content: `<p>Google's ad auction is a sophisticated real-world game. Advertisers bid for keywords. It's not a simple highest-bid-wins auction. Google uses a variation of a <strong>Vickrey-Clarke-Groves (VCG) auction</strong>. In this model, you pay what the next-highest bidder bid. This encourages truthful bidding, as there's no advantage to bidding lower than your true valuation. It's a prime example of <glossary-term>Mechanism Design</glossary-term>, a branch of game theory that designs games to achieve specific outcomes (like truthful bidding and maximum revenue).</p>`
+                },
+                {
+                    title: 'Technology: Network Effects', field: 'Technology',
+                    content: `<p>The value of a social media platform or a communication tool increases with the number of users. This is a <glossary-term>Network Effect</glossary-term>. This can be modeled as a coordination game. Early adopters face a risk: if the network doesn't grow, their investment (of time) is wasted. However, if a critical mass is reached (a <glossary-term>Tipping Point</glossary-term>), the dominant strategy for new users becomes to join the largest network, creating a 'winner-take-all' market. This explains the rapid growth of platforms like Facebook and WhatsApp.</p>`
+                }
+            ],
+            quizData: [
+                { question: "Who is considered a key founder of modern Game Theory for his work on zero-sum games?", options: ["John Nash", "Adam Smith", "John von Neumann", "Milton Friedman"], answer: 2, difficulty: "Beginner" },
+                { question: "What is a 'player' in the context of Game Theory?", options: ["A piece on a game board", "A rational decision-maker", "A random variable", "A market competitor"], answer: 1, difficulty: "Beginner" },
+                { question: "A 'zero-sum game' means:", options: ["Nobody wins", "One player's gain is exactly another player's loss", "The game has no value", "All players get a payoff of zero"], answer: 1, difficulty: "Beginner" },
+                { question: "In the classic Prisoner's Dilemma, what is the Nash Equilibrium?", options: ["Both players cooperate", "Both players defect (betray)", "One cooperates, one defects", "There is no pure strategy equilibrium"], answer: 1, difficulty: "Intermediate" },
+                { question: "A situation where no player can benefit by changing their strategy while the other players keep theirs unchanged is called:", options: ["Pareto Optimality", "Dominant Strategy", "Zero-Sum Game", "Nash Equilibrium"], answer: 3, difficulty: "Intermediate" },
+                { question: "The Stag Hunt game primarily illustrates the tension between:", options: ["Safety and cooperation", "Individual and group rationality", "Greed and fear", "Brinkmanship and retreat"], answer: 0, difficulty: "Intermediate" },
+                { question: "If the Nash Equilibrium of a game is NOT Pareto Optimal, it implies:", options: ["The game is irrational", "There is at least one other outcome where one player is better off without harming others", "There is at least one other outcome where all players are better off or at least one is better off and none are worse off", "The game must be a zero-sum game"], answer: 2, difficulty: "Advanced" },
+                { question: "In the Game of Chicken with two drivers, how many pure strategy Nash Equilibria are there?", options: ["0", "1", "2", "4"], answer: 2, difficulty: "Advanced" },
+                { question: "A 'Tit-for-Tat' strategy is most effective in which type of game?", options: ["A single, one-shot game", "A zero-sum game", "An iterated (repeated) game", "A game with imperfect information"], answer: 2, difficulty: "Advanced" }
+            ],
+            achievements: {
+                'welcome': { title: 'Welcome, Strategist!', description: 'You started your journey into Game Theory.' },
+                'persistent_player': { title: 'Persistent Player', description: 'Returned to the app with saved progress.' },
+                'first_analysis': { title: 'Junior Analyst', description: 'You analyzed your first scenario.' },
+                'play_round': { title: 'Getting in the Game', description: 'You played your first round against an AI.' },
+                'dilemma_solved': { title: 'Dilemma Solved', description: 'You found the equilibrium in the Prisoner\'s Dilemma.' },
+                'battle_master': { title: 'Coordination King', description: 'You analyzed the Battle of the Sexes.' },
+                'glossary_guru': { title: 'Glossary Guru', description: 'Visited the glossary.' },
+                'sandbox_creator': { title: 'Game Designer', description: 'You created your first game in the Sandbox.' },
+                'quiz_beginner': { title: 'Novice Quizzer', description: 'You completed the Beginner quiz.' },
+                'quiz_intermediate': { title: 'Adept Quizzer', description: 'You completed the Intermediate quiz with a passing score.' },
+                'quiz_advanced': { title: 'Master Strategist', description: 'You passed the Advanced quiz!'},
+            },
+            glossary: {
+                'Game Theory': 'The study of mathematical models of strategic interaction among rational decision-makers.',
+                'Nash Equilibrium': 'A state where no player can benefit by unilaterally changing their strategy, assuming the other players keep their strategies unchanged.',
+                'Dominant Strategy': 'A strategy that yields the highest payoff for a player regardless of what the other players do.',
+                'Pareto Optimality': 'An outcome where it is impossible to make any one player better off without making at least one player worse off.',
+                'Zero-Sum Game': 'A game in which the total gains of the winners are equal to the total losses of the losers.',
+                'Evolutionary Stable Strategy (ESS)': 'A strategy which, if adopted by a population, cannot be invaded by any alternative mutant strategy.',
+                'Mechanism Design': 'A field in economics and game theory that takes an engineering approach to designing economic mechanisms or incentives, toward desired objectives.',
+                'Network Effect': 'A phenomenon whereby a product or service gains additional value as more people use it.',
+                'Tipping Point': 'The point at which a series of small changes or incidents becomes significant enough to cause a larger, more important change.'
+            }
+        };
+
+        const App = {
+            // --- STATE ---
+            state: {
+                activePage: 'dashboard',
+                user: { name: 'Strategist', xp: 0, achievements: new Set() },
+                quiz: { active: false, difficulty: null, questions: [] },
+                playHistory: {},
+            },
+
+            // --- CORE APP LOGIC ---
+            init() {
+                const isFirstVisit = !localStorage.getItem('strategem_user_state');
+                this.loadState();
+                if (!isFirstVisit) {
+                    this.grantAchievement('persistent_player', {noXp: true});
+                }
+                this.grantAchievement('welcome');
+                this.bindEventListeners();
+                this.navigate('dashboard');
+            },
+
+            bindEventListeners() {
+                document.getElementById('main-nav').addEventListener('click', e => {
+                    if (e.target.matches('.nav-btn')) this.navigate(e.target.dataset.page);
+                });
+
+                document.getElementById('main-content').addEventListener('click', e => {
+                    const target = e.target.closest('[data-action]');
+                    if (!target) return;
+                    const { action, index, move, difficulty } = target.dataset;
+                    if (action === "analyze") this.handleAnalysis(index);
+                    if (action === "play") this.handleScenarioPlay(index, move);
+                    if (action === "create-sandbox") this.handleSandboxCreate();
+                    if (action === "start-quiz") this.handleQuizStart(difficulty);
+                    if (action === "submit-quiz") this.handleQuizSubmit();
+                });
+                
+                document.getElementById('main-content').addEventListener('input', e => {
+                    if (e.target.id === 'glossary-search') this.renderGlossary(e.target.value.toLowerCase());
+                });
+            },
+
+            navigate(pageId) {
+                this.state.activePage = pageId;
+                this.render();
+            },
+
+            saveState() {
+                const stateToSave = { xp: this.state.user.xp, achievements: [...this.state.user.achievements] };
+                localStorage.setItem('strategem_user_state', JSON.stringify(stateToSave));
+            },
+
+            loadState() {
+                const savedState = localStorage.getItem('strategem_user_state');
+                if (savedState) {
+                    const parsedState = JSON.parse(savedState);
+                    this.state.user.xp = parsedState.xp || 0;
+                    this.state.user.achievements = new Set(parsedState.achievements || []);
+                }
+            },
+            
+            render() {
+                document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.page === this.state.activePage));
+                document.querySelectorAll('.content-section').forEach(sec => sec.classList.toggle('active', sec.id === this.state.activePage));
+                const renderFunc = `render${this.state.activePage.charAt(0).toUpperCase() + this.state.activePage.slice(1)}`;
+                if (typeof this[renderFunc] === 'function') {
+                    this[renderFunc]();
+                }
+            },
+
+            // --- PAGE RENDERERS ---
+            renderDashboard() {
+                const container = document.getElementById('dashboard');
+                container.innerHTML = `
+                    <header class="page-header">
+                        <h2>Welcome, ${this.state.user.name}!</h2>
+                        <p>This is your central hub for tracking progress and achievements.</p>
+                    </header>
+                    <div id="dashboard-stats" class="card">
+                        <div class="stat-card">
+                            <div class="value">${this.state.user.xp}</div>
+                            <div class="label">Strategy Points (XP)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value">${this.state.user.achievements.size} / ${Object.keys(Data.achievements).length}</div>
+                            <div class="label">Achievements Unlocked</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Your Achievements</h3>
+                        <div id="achievements-grid">
+                            ${Object.entries(Data.achievements).map(([id, ach]) => {
+                                const unlocked = this.state.user.achievements.has(id);
+                                return `
+                                <div class="achievement ${unlocked ? 'unlocked' : ''}">
+                                    <h5>${ach.title}</h5>
+                                    <p>${ach.description}</p>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+            },
+            renderLearn() {
+                document.getElementById('learn').innerHTML = `
+                    <header class="page-header">
+                        <h2>Learning Hub</h2>
+                        <p>Master the fundamentals of Game Theory, from its history to its core concepts.</p>
+                    </header>
+                    ${Object.values(Data.learningContent).map(section => `
+                        <div class="card">
+                            <h3>${section.title}</h3>
+                            ${this.linkGlossaryTerms(section.content)}
+                        </div>
+                    `).join('')}`;
+            },
+            renderScenarios() {
+                document.getElementById('scenarios').innerHTML = `
+                    <header class="page-header">
+                        <h2>Interactive Scenarios</h2>
+                        <p>Explore classic games. Analyze them for equilibria or play against an AI to see strategies in action.</p>
+                    </header>
+                    <div id="scenarios-container">
+                        ${Data.scenarios.map((s, i) => this.templateScenarioCard(s, i)).join('')}
+                    </div>`;
+            },
+            renderCases() {
+                document.getElementById('cases').innerHTML = `
+                    <header class="page-header">
+                        <h2>Real-World Case Studies</h2>
+                        <p>See how Game Theory applies to business, politics, and biology.</p>
+                    </header>
+                    <div id="cases-container">
+                        ${Data.caseStudies.map(c => `
+                            <div class="card">
+                                <h4>${c.title} <span style="font-size: 0.7em; color: #888; font-weight: normal;">- ${c.field}</span></h4>
+                                ${this.linkGlossaryTerms(c.content)}
+                            </div>`).join('')}
+                    </div>`;
+            },
+            renderGlossary(searchTerm = '') {
+                this.grantAchievement('glossary_guru');
+                const filteredGlossary = Object.entries(Data.glossary).filter(([term, def]) => 
+                    term.toLowerCase().includes(searchTerm) || def.toLowerCase().includes(searchTerm)
+                );
+                document.getElementById('glossary').innerHTML = `
+                    <header class="page-header">
+                        <h2>Glossary of Terms</h2>
+                        <p>Search for key concepts in Game Theory.</p>
+                    </header>
+                    <div class="card">
+                        <input type="text" id="glossary-search" placeholder="Search terms or definitions..." value="${searchTerm}">
+                        ${filteredGlossary.map(([term, definition]) => `
+                            <div class="card" style="background:var(--bg-color);">
+                                <h4>${term}</h4>
+                                <p>${definition}</p>
+                            </div>`).join('') || '<p>No matching terms found.</p>'}
+                    </div>`;
+            },
+            renderSandbox() {
+                document.getElementById('sandbox').innerHTML = `
+                    <header class="page-header">
+                        <h2>Sandbox Game Creator</h2>
+                        <p>Design your own 2x2 strategic game and find its equilibrium.</p>
+                    </header>
+                    <div class="card">
+                        <form id="sandbox-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px 30px;">
+                            <div class="form-group"><label for="p1-name">Player 1 Name</label><input type="text" id="p1-name" value="Player 1"></div>
+                            <div class="form-group"><label for="p2-name">Player 2 Name</label><input type="text" id="p2-name" value="Player 2"></div>
+                            <div class="form-group"><label for="p1-a1-name">P1 Action 1</label><input type="text" id="p1-a1-name" value="Cooperate"></div>
+                            <div class="form-group"><label for="p2-a1-name">P2 Action 1</label><input type="text" id="p2-a1-name" value="Cooperate"></div>
+                            <div class="form-group"><label for="p1-a2-name">P1 Action 2</label><input type="text" id="p1-a2-name" value="Defect"></div>
+                            <div class="form-group"><label for="p2-a2-name">P2 Action 2</label><input type="text" id="p2-a2-name" value="Defect"></div>
+                            <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <h4>Payoffs (Player 1, Player 2)</h4>
+                                <div class="form-group"><label for="payoff-00">If P1: Action 1, P2: Action 1</label><input type="text" id="payoff-00" value="3,3" placeholder="P1,P2"></div>
+                                <div class="form-group"><label for="payoff-01">If P1: Action 1, P2: Action 2</label><input type="text" id="payoff-01" value="0,5" placeholder="P1,P2"></div>
+                                <div class="form-group"><label for="payoff-10">If P1: Action 2, P2: Action 1</label><input type="text" id="payoff-10" value="5,0" placeholder="P1,P2"></div>
+                                <div class="form-group"><label for="payoff-11">If P1: Action 2, P2: Action 2</label><input type="text" id="payoff-11" value="1,1" placeholder="P1,P2"></div>
+                            </div>
+                        </form>
+                        <button data-action="create-sandbox" class="action-btn">Create & Analyze Game</button>
+                    </div>
+                    <div id="sandbox-output"></div>`;
+            },
+            renderQuiz() {
+                document.getElementById('quiz').innerHTML = `
+                    <header class="page-header"><h2>Test Your Knowledge</h2><p>Select a difficulty and test your understanding.</p></header>
+                    <div class="card">
+                        <div id="quiz-difficulty-selector">
+                            <button class="action-btn" data-action="start-quiz" data-difficulty="Beginner">Beginner</button>
+                            <button class="action-btn" data-action="start-quiz" data-difficulty="Intermediate">Intermediate</button>
+                            <button class="action-btn" data-action="start-quiz" data-difficulty="Advanced">Advanced</button>
+                        </div>
+                        <div id="quiz-container"><p>Please select a difficulty level to begin.</p></div>
+                        <button id="submit-quiz" data-action="submit-quiz" class="action-btn" style="display:none;">Submit Answers</button>
+                        <div id="quiz-results" style="margin-top: 20px; font-size: 1.2em; font-weight: bold;"></div>
+                    </div>`;
+            },
+
+            // --- EVENT HANDLERS ---
+            handleAnalysis(index) {
+                const scenario = Data.scenarios[index];
+                const analysis = this.analyzeMatrix(scenario.payoffs);
+                document.querySelectorAll(`#scenario-${index} .payoff-matrix td`).forEach(td => {
+                    td.className = '';
+                    const [row, col] = td.dataset.cell.split(',').map(Number);
+                    if (analysis.bestResponses.p1[col] === row) td.classList.add('p1-best-response');
+                    if (analysis.bestResponses.p2[row] === col) td.classList.add('p2-best-response');
+                    if (analysis.equilibria.some(eq => eq.p1 === row && eq.p2 === col)) td.classList.add('nash-equilibrium');
+                });
+                
+                let resultHTML = `<h4>Analysis:</h4>`;
+                if (analysis.equilibria.length > 0) {
+                    resultHTML += `<p><strong>Pure Strategy Nash Equilibrium/Equilibria found at:</strong></p><ul>${analysis.equilibria.map(eq => `<li>(${scenario.players.p1}: ${scenario.actions[eq.p1 === 0 ? 'a1' : 'a2']}, ${scenario.players.p2}: ${scenario.actions[eq.p2 === 0 ? 'a1' : 'a2']})</li>`).join('')}</ul>`;
+                } else {
+                    resultHTML += `<p>No Pure Strategy Nash Equilibrium found. This game may have a Mixed Strategy equilibrium.</p>`;
+                }
+                resultHTML += `<p><strong>Reasoning:</strong> ${analysis.reasoning}</p>`;
+                document.querySelector(`#analysis-${index}`).innerHTML = resultHTML;
+
+                this.addXp(10);
+                this.grantAchievement('first_analysis');
+                if (scenario.title === "The Prisoner's Dilemma") this.grantAchievement('dilemma_solved');
+                if (scenario.title === "Battle of the Sexes") this.grantAchievement('battle_master');
+            },
+            handleScenarioPlay(scenarioIndex, playerActionIndex) {
+                const scenario = Data.scenarios[scenarioIndex];
+                playerActionIndex = parseInt(playerActionIndex);
+                let aiActionIndex;
+                const aiSelector = document.querySelector(`#ai-selector-${scenarioIndex}`);
+                const aiStrategy = aiSelector ? aiSelector.value : (scenario.aiOptions ? Object.values(scenario.aiOptions)[0] : 0);
+
+                if (aiStrategy === 'tit-for-tat') {
+                    aiActionIndex = this.state.playHistory[scenarioIndex] === undefined ? 0 : this.state.playHistory[scenarioIndex];
+                } else if (aiStrategy === 'random') {
+                    aiActionIndex = Math.floor(Math.random() * 2);
+                } else {
+                    aiActionIndex = parseInt(aiStrategy);
+                }
+                this.state.playHistory[scenarioIndex] = playerActionIndex;
+                const playerPayoff = scenario.payoffs[playerActionIndex][aiActionIndex][0];
+                const aiPayoff = scenario.payoffs[playerActionIndex][aiActionIndex][1];
+                const logContainer = document.querySelector(`#play-log-${scenarioIndex}`);
+                logContainer.innerHTML += `> You chose: <strong>${scenario.actions[playerActionIndex === 0 ? 'a1' : 'a2']}</strong>. AI chose: <strong>${scenario.actions[aiActionIndex === 0 ? 'a1' : 'a2']}</strong>.<br>`;
+                logContainer.innerHTML += `> Payoff: You get ${playerPayoff}, AI gets ${aiPayoff}.<br><br>`;
+                logContainer.scrollTop = logContainer.scrollHeight;
+                this.addXp(5);
+                this.grantAchievement('play_round');
+            },
+            handleSandboxCreate() {
+                try {
+                    const getVal = id => document.getElementById(id).value;
+                    const parsePayoff = id => getVal(id).split(',').map(n => {
+                        const num = parseInt(n.trim());
+                        if (isNaN(num)) throw new Error(`Invalid payoff value in '${getVal(id)}'. Please use numbers, e.g., '3,3'.`);
+                        return num;
+                    });
+                    const sandboxScenario = {
+                        title: 'Your Custom Game',
+                        players: { p1: getVal('p1-name'), p2: getVal('p2-name') },
+                        actions: { a1: getVal('p1-a1-name'), a2: getVal('p1-a2-name'), b1: getVal('p2-a1-name'), b2: getVal('p2-a2-name') },
+                        payoffs: [
+                            [parsePayoff('payoff-00'), parsePayoff('payoff-01')],
+                            [parsePayoff('payoff-10'), parsePayoff('payoff-11')]
+                        ]
+                    };
+                    const analysis = this.analyzeMatrix(sandboxScenario.payoffs);
+                    document.getElementById('sandbox-output').innerHTML = this.templateSandboxResult(sandboxScenario, analysis);
+                    document.querySelectorAll('#sandbox-output .payoff-matrix td').forEach(td => {
+                        const [row, col] = td.dataset.cell.split(',').map(Number);
+                        if (analysis.bestResponses.p1[col] === row) td.classList.add('p1-best-response');
+                        if (analysis.bestResponses.p2[row] === col) td.classList.add('p2-best-response');
+                        if (analysis.equilibria.some(eq => eq.p1 === row && eq.p2 === col)) td.classList.add('nash-equilibrium');
+                    });
+                    this.addXp(25);
+                    this.grantAchievement('sandbox_creator');
+                } catch (error) {
+                    document.getElementById('sandbox-output').innerHTML = `<p style="color: var(--danger-color);">Error: ${error.message}</p>`;
+                }
+            },
+            handleQuizStart(difficulty) {
+                this.state.quiz = { active: true, difficulty, questions: Data.quizData.filter(q => q.difficulty === difficulty) };
+                document.getElementById('quiz-container').innerHTML = this.state.quiz.questions.map((q, i) => `
+                    <div class="quiz-question" id="question-${i}">
+                        <p><strong>${i + 1}. ${q.question}</strong></p>
+                        ${q.options.map((opt, oi) => `<label style="display: block; margin-bottom: 5px;"><input type="radio" name="q${i}" value="${oi}"> ${opt}</label>`).join('')}
+                        <div class="feedback" id="feedback-${i}"></div>
+                    </div>`).join('');
+                document.getElementById('submit-quiz').style.display = 'inline-block';
+                document.getElementById('quiz-results').innerHTML = '';
+            },
+            handleQuizSubmit() {
+                if (!this.state.quiz.active) return;
+                let score = 0;
+                this.state.quiz.questions.forEach((q, i) => {
+                    const feedbackEl = document.getElementById(`feedback-${i}`);
+                    const selected = document.querySelector(`input[name="q${i}"]:checked`);
+                    if (selected) {
+                        if (parseInt(selected.value) === q.answer) {
+                            score++;
+                            feedbackEl.textContent = 'Correct!';
+                            feedbackEl.className = 'feedback correct';
+                        } else {
+                            feedbackEl.textContent = `Incorrect. The correct answer is: ${q.options[q.answer]}`;
+                            feedbackEl.className = 'feedback incorrect';
+                        }
+                    } else {
+                        feedbackEl.textContent = 'No answer selected.';
+                        feedbackEl.className = 'feedback incorrect';
+                    }
+                });
+                const total = this.state.quiz.questions.length;
+                document.getElementById('quiz-results').innerHTML = `You scored ${score} out of ${total}!`;
+                this.addXp(total * 5 + score * 10);
+                const passingScore = score / total >= 0.75;
+                if (this.state.quiz.difficulty === 'Beginner') this.grantAchievement('quiz_beginner');
+                if (this.state.quiz.difficulty === 'Intermediate' && passingScore) this.grantAchievement('quiz_intermediate');
+                if (this.state.quiz.difficulty === 'Advanced' && passingScore) this.grantAchievement('quiz_advanced');
+                this.state.quiz.active = false;
+            },
+
+            // --- HTML TEMPLATES ---
+            templateScenarioCard(s, i) {
+                const aiSelectorHTML = s.aiOptions ? `
+                    <div style="margin-bottom:15px;">
+                        <label for="ai-selector-${i}"><strong>AI Strategy:</strong></label>
+                        <select id="ai-selector-${i}">
+                            ${Object.entries(s.aiOptions).map(([name, value]) => `<option value="${value}">${name}</option>`).join('')}
+                        </select>
+                    </div>` : '';
+                return `
+                <div class="card" id="scenario-${i}">
+                    <h3>${s.title}</h3>
+                    <p>${s.description}</p>
+                    <table class="payoff-matrix scenario-matrix">
+                        <tr><th colspan="2" rowspan="2"></th><th colspan="2">${s.players.p2}</th></tr>
+                        <tr><th>${s.actions.a1}</th><th>${s.actions.a2}</th></tr>
+                        <tr>
+                            <th rowspan="2" class="player-label"><div>${s.players.p1}</div></th>
+                            <th>${s.actions.a1}</th>
+                            <td data-cell="0,0"><span class="payoff payoff-p1">${s.payoffs[0][0][0]}</span>, <span class="payoff payoff-p2">${s.payoffs[0][0][1]}</span></td>
+                            <td data-cell="0,1"><span class="payoff payoff-p1">${s.payoffs[0][1][0]}</span>, <span class="payoff payoff-p2">${s.payoffs[0][1][1]}</span></td>
+                        </tr>
+                        <tr>
+                            <th>${s.actions.a2}</th>
+                            <td data-cell="1,0"><span class="payoff payoff-p1">${s.payoffs[1][0][0]}</span>, <span class="payoff payoff-p2">${s.payoffs[1][0][1]}</span></td>
+                            <td data-cell="1,1"><span class="payoff payoff-p1">${s.payoffs[1][1][0]}</span>, <span class="payoff payoff-p2">${s.payoffs[1][1][1]}</span></td>
+                        </tr>
+                    </table>
+                    <button class="action-btn" data-action="analyze" data-index="${i}">Analyze Equilibrium</button>
+                    <div class="analysis-result" id="analysis-${i}">Click "Analyze Equilibrium" to see the breakdown.</div>
+                    <div class="play-area">
+                        <h4>Play a Round</h4>
+                        ${aiSelectorHTML}
+                        <p>Choose your move:</p>
+                        <button class="action-btn" data-action="play" data-index="${i}" data-move="0">${s.actions.a1}</button>
+                        <button class="action-btn" data-action="play" data-index="${i}" data-move="1">${s.actions.a2}</button>
+                        <div class="play-log" id="play-log-${i}"></div>
+                    </div>
+                </div>`;
+            },
+            templateSandboxResult(s, analysis) {
+                let analysisHTML = '<h4>Analysis:</h4>';
+                if (analysis.equilibria.length > 0) {
+                    analysisHTML += `<p><strong>Pure Strategy Nash Equilibrium/Equilibria found at:</strong></p><ul>${analysis.equilibria.map(eq => `<li>(${s.players.p1}: ${eq.p1 === 0 ? s.actions.a1 : s.actions.a2}, ${s.players.p2}: ${eq.p2 === 0 ? s.actions.b1 : s.actions.b2})</li>`).join('')}</ul>`;
+                } else {
+                    analysisHTML += `<p>No Pure Strategy Nash Equilibrium found.</p>`;
+                }
+                analysisHTML += `<p><strong>Reasoning:</strong> ${analysis.reasoning}</p>`;
+                return `
+                <div class="card">
+                    <h3>${s.title}</h3>
+                    <table class="payoff-matrix sandbox-matrix">
+                        <tr><th colspan="2" rowspan="2"></th><th colspan="2">${s.players.p2}</th></tr>
+                        <tr><th>${s.actions.b1}</th><th>${s.actions.b2}</th></tr>
+                        <tr>
+                            <th rowspan="2" class="player-label"><div>${s.players.p1}</div></th><th>${s.actions.a1}</th>
+                            <td data-cell="0,0"><span class="payoff payoff-p1">${s.payoffs[0][0][0]}</span>, <span class="payoff payoff-p2">${s.payoffs[0][0][1]}</span></td>
+                            <td data-cell="0,1"><span class="payoff payoff-p1">${s.payoffs[0][1][0]}</span>, <span class="payoff payoff-p2">${s.payoffs[0][1][1]}</span></td>
+                        </tr>
+                        <tr><th>${s.actions.a2}</th>
+                            <td data-cell="1,0"><span class="payoff payoff-p1">${s.payoffs[1][0][0]}</span>, <span class="payoff payoff-p2">${s.payoffs[1][0][1]}</span></td>
+                            <td data-cell="1,1"><span class="payoff payoff-p1">${s.payoffs[1][1][0]}</span>, <span class="payoff payoff-p2">${s.payoffs[1][1][1]}</span></td>
+                        </tr>
+                    </table>
+                    <div class="analysis-result">${analysisHTML}</div>
+                </div>`;
+            },
+
+            // --- UTILITIES ---
+            addXp(amount) {
+                this.state.user.xp += amount;
+                this.saveState();
+                if (this.state.activePage === 'dashboard') this.renderDashboard();
+            },
+            grantAchievement(id, options = {}) {
+                if (!this.state.user.achievements.has(id)) {
+                    this.state.user.achievements.add(id);
+                    if (!options.noXp) {
+                       this.addXp(50);
+                    }
+                    this.saveState();
+                    if (this.state.activePage === 'dashboard') this.renderDashboard();
+                }
+            },
+            analyzeMatrix(payoffs) {
+                const p1_br = [ payoffs[0][0][0] >= payoffs[1][0][0] ? 0 : 1, payoffs[0][1][0] >= payoffs[1][1][0] ? 0 : 1 ];
+                const p2_br = [ payoffs[0][0][1] >= payoffs[0][1][1] ? 0 : 1, payoffs[1][0][1] >= payoffs[1][1][1] ? 0 : 1 ];
+                const equilibria = [];
+                for (let i = 0; i < 2; i++) {
+                    for (let j = 0; j < 2; j++) {
+                        if (p1_br[j] === i && p2_br[i] === j) equilibria.push({ p1: i, p2: j });
+                    }
+                }
+                return { equilibria, bestResponses: { p1: p1_br, p2: p2_br }, reasoning: "An equilibrium exists where both players are making their best possible move given the other's move. Neither has a unilateral incentive to deviate. Best responses are marked with a checkmark (✓)." };
+            },
+            linkGlossaryTerms(htmlContent) {
+                let newContent = htmlContent;
+                const sortedTerms = Object.keys(Data.glossary).sort((a, b) => b.length - a.length);
+                sortedTerms.forEach(term => {
+                    const regex = new RegExp(`(<glossary-term>.*?)?\\b(${term})\\b(.*?<\\/glossary-term>)?`, 'gi');
+                    newContent = newContent.replace(regex, (match, p1, p2, p3) => {
+                        if (p1 || p3) return match;
+                        return `<glossary-term>${p2}<span class="tooltip">${Data.glossary[term]}</span></glossary-term>`;
+                    });
+                });
+                return newContent;
+            }
+        };
+
+        // --- START THE APP ---
+        App.init();
+
+    })();
+    </script>
+</body>
+</html>
